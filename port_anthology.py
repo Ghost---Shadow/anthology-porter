@@ -22,8 +22,11 @@ def write_bib_file(bib_data, file_path):
 def main(raw_bib_path, input_anthology_path):
     print("Parsing", raw_bib_path)
     raw_bib = read_bib_file(raw_bib_path)
+    print("Parsing done")
+
     print("Parsing", input_anthology_path)
     input_anthology = read_bib_file(input_anthology_path)
+    print("Parsing done")
 
     if raw_bib is None or input_anthology is None:
         return
@@ -54,13 +57,13 @@ def main(raw_bib_path, input_anthology_path):
 
     # Write results to files with tqdm for progress indication
     print("Writing matching entries to anthology.bib")
-    write_bib_file(matching_bib_data, "anthology.bib")
+    write_bib_file(matching_bib_data, "./artifacts/anthology.bib")
     print("Writing non-matching entries to custom.bib")
-    write_bib_file(non_matching_bib_data, "custom.bib")
+    write_bib_file(non_matching_bib_data, "./artifacts/custom.bib")
 
     print("Operation completed")
 
 
 # Example usage
 if __name__ == "__main__":
-    main("raw.bib", "input_anthology.bib")
+    main("./artifacts/shaken_raw.bib", "./artifacts/input_anthology.bib")
