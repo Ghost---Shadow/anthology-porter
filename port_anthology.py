@@ -31,16 +31,20 @@ def main(raw_bib_path, input_anthology_path):
     # Dictionary to store titles from input anthology
     anthology_titles = {
         entry.fields.get("title", "").lower(): key
-        for key, entry in tqdm(input_anthology.entries.items())
+        for key, entry in tqdm(
+            input_anthology.entries.items(), desc="Processing input anthology"
+        )
     }
 
     matching_entries = {}
     non_matching_entries = {}
 
-    for key, entry in tqdm(raw_bib.entries.items()):
+    # Processing raw.bib entries with tqdm
+    for key, entry in tqdm(raw_bib.entries.items(), desc="Comparing entries"):
         title = entry.fields.get("title", "").lower()
         if title in anthology_titles:
-            matching_entries[key] = entry
+            # Use the entry from input anthology but with the key from raw.bib
+            matching_entries[key] = input_anthology.entries[anthology_titles[title]]
         else:
             non_matching_entries[key] = entry
 
@@ -48,12 +52,13 @@ def main(raw_bib_path, input_anthology_path):
     matching_bib_data = BibliographyData(entries=matching_entries)
     non_matching_bib_data = BibliographyData(entries=non_matching_entries)
 
-    # Write results to files
+    # Write results to files with tqdm for progress indication
+    print("Writing matching entries to anthology.bib")
     write_bib_file(matching_bib_data, "anthology.bib")
+    print("Writing non-matching entries to custom.bib")
     write_bib_file(non_matching_bib_data, "custom.bib")
 
-    print("Matching entries written to anthology.bib")
-    print("Non-matching entries written to custom.bib")
+    print("Operation completed")
 
 
 # Example usage
