@@ -1,6 +1,12 @@
+import re
 from pybtex.database import parse_file
 from pybtex.database import BibliographyData
 from tqdm import tqdm
+
+
+def clean_title(title):
+    # Remove all special characters except alphanumeric and spaces
+    return re.sub(r"[^a-zA-Z0-9\s]", "", title)
 
 
 def read_bib_file(file_path):
@@ -33,7 +39,7 @@ def main(raw_bib_path, input_anthology_path):
 
     # Dictionary to store titles from input anthology
     anthology_titles = {
-        entry.fields.get("title", "").lower(): key
+        clean_title(entry.fields.get("title", "")).lower(): key
         for key, entry in tqdm(
             input_anthology.entries.items(), desc="Processing input anthology"
         )
@@ -44,7 +50,7 @@ def main(raw_bib_path, input_anthology_path):
 
     # Processing raw.bib entries with tqdm
     for key, entry in tqdm(raw_bib.entries.items(), desc="Comparing entries"):
-        title = entry.fields.get("title", "").lower()
+        title = clean_title(entry.fields.get("title", "")).lower()
         if title in anthology_titles:
             # Use the entry from input anthology but with the key from raw.bib
             matching_entries[key] = input_anthology.entries[anthology_titles[title]]
