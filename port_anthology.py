@@ -1,4 +1,5 @@
 import re
+import argparse
 from pybtex.database import parse_file
 from pybtex.database import BibliographyData
 from tqdm import tqdm
@@ -25,7 +26,7 @@ def write_bib_file(bib_data, file_path):
         print(f"Error writing {file_path}: {e}")
 
 
-def main(raw_bib_path, input_anthology_path):
+def main(raw_bib_path, input_anthology_path, output_anthology_path, output_custom_path):
     print("Parsing", raw_bib_path)
     raw_bib = read_bib_file(raw_bib_path)
     print("Parsing done")
@@ -62,14 +63,47 @@ def main(raw_bib_path, input_anthology_path):
     non_matching_bib_data = BibliographyData(entries=non_matching_entries)
 
     # Write results to files with tqdm for progress indication
-    print("Writing matching entries to anthology.bib")
-    write_bib_file(matching_bib_data, "./artifacts/anthology.bib")
-    print("Writing non-matching entries to custom.bib")
-    write_bib_file(non_matching_bib_data, "./artifacts/custom.bib")
+    print("Writing matching entries to", output_anthology_path)
+    write_bib_file(matching_bib_data, output_anthology_path)
+    print("Writing non-matching entries to", output_custom_path)
+    write_bib_file(non_matching_bib_data, output_custom_path)
 
     print("Operation completed")
 
 
-# Example usage
+# Command-line argument parsing
 if __name__ == "__main__":
-    main("./artifacts/shaken_raw.bib", "./artifacts/input_anthology.bib")
+    parser = argparse.ArgumentParser(
+        description="Match BibTeX entries by title and separate them."
+    )
+
+    # Define optional arguments with default values
+    parser.add_argument(
+        "--raw_bib_path",
+        default="./artifacts/shaken_raw.bib",
+        help="Path to the raw BibTeX file.",
+    )
+    parser.add_argument(
+        "--input_anthology_path",
+        default="./artifacts/input_anthology.bib",
+        help="Path to the input anthology BibTeX file.",
+    )
+    parser.add_argument(
+        "--output_anthology_path",
+        default="./artifacts/anthology.bib",
+        help="Path to save the matching BibTeX entries.",
+    )
+    parser.add_argument(
+        "--output_custom_path",
+        default="./artifacts/custom.bib",
+        help="Path to save the non-matching BibTeX entries.",
+    )
+
+    args = parser.parse_args()
+
+    main(
+        args.raw_bib_path,
+        args.input_anthology_path,
+        args.output_anthology_path,
+        args.output_custom_path,
+    )
