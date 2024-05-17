@@ -167,4 +167,7 @@ anthology.bib
 custom.bib
 scratch
 
-latex_files/*.tex
+latex_files/*
+!latex_files/.gitkeep
+citation_keys.json
+shaken_raw.bib
