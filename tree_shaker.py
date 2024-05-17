@@ -1,16 +1,45 @@
 import os
-import re
 import json
 from pybtex.database import parse_file, BibliographyData
+from pylatexenc.latexwalker import LatexWalker, LatexMacroNode, LatexCharsNode
 from tqdm import tqdm
 
 
+def strip_array(arr):
+    return list(map(lambda x: x.strip(), arr))
+
+
 def find_citation_keys(tex_content):
-    # Regular expression to find all \cite{...}
-    pattern = re.compile(r"\\cite\{([^}]+)\}")
-    # Find all matches
-    matches = pattern.findall(tex_content)
-    return matches
+    walker = LatexWalker(tex_content)
+    nodes, _, _ = walker.get_latex_nodes()
+
+    citation_keys = []
+    for node in nodes:
+        if isinstance(node, LatexMacroNode) and node.macroname == "cite":
+            if (
+                node.nodeargd
+                and node.nodeargd.argnlist
+                and len(node.nodeargd.argnlist) > 0
+            ):
+                for arg in node.nodeargd.argnlist:
+                    if arg and arg.nodelist:
+                        for subnode in arg.nodelist:
+                            if isinstance(subnode, LatexCharsNode):
+                                keys = subnode.chars.split(",")
+                                keys = strip_array(keys)
+                                citation_keys.extend(keys)
+                            elif (
+                                isinstance(subnode, LatexMacroNode) and subnode.nodeargd
+                            ):
+                                # Handling deeper macros, just in case
+                                deeper_keys = "".join(
+                                    n.chars
+                                    for n in subnode.nodeargd.argnlist
+                                    if isinstance(n, LatexCharsNode)
+                                )
+                                deeper_keys = strip_array(deeper_keys.split(","))
+                                citation_keys.extend(deeper_keys)
+    return citation_keys
 
 
 def filter_bib_entries(bib_database, keys_to_keep):
@@ -30,7 +59,8 @@ def main():
     all_citation_keys = []
 
     # Walk through the directory and its subdirectories
-    for dirpath, _, filenames in tqdm(os.walk(root_directory)):
+    full_tree = list(os.walk(root_directory))
+    for dirpath, _, filenames in tqdm(full_tree):
         for filename in filenames:
             if filename.endswith(".tex"):
                 # Full path to the file
@@ -47,16 +77,16 @@ def main():
     all_citation_keys = sorted(set(all_citation_keys))
 
     # Parse the BibTeX file using pybtex
-    bib_database = parse_file("./raw.bib")
+    bib_database = parse_file("./artifacts/raw.bib")
 
     # Filter the BibTeX entries
     filtered_bib_database = filter_bib_entries(bib_database, all_citation_keys)
 
     # Write the filtered entries to a new BibTeX file
-    with open("./shaken_raw.bib", "w", encoding="utf-8") as output_file:
+    with open("./artifacts/shaken_raw.bib", "w", encoding="utf-8") as output_file:
         filtered_bib_database.to_file(output_file)
 
-    with open("citation_keys.json", "w", encoding="utf-8") as f:
+    with open("./artifacts/citation_keys.json", "w", encoding="utf-8") as f:
         json.dump(all_citation_keys, f, indent=2)
 
 
