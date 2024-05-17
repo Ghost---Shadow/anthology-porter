@@ -1,5 +1,6 @@
 import os
 import json
+import argparse
 from pybtex.database import parse_file, BibliographyData
 from pylatexenc.latexwalker import LatexWalker, LatexMacroNode, LatexCharsNode
 from tqdm import tqdm
@@ -52,21 +53,19 @@ def filter_bib_entries(bib_database, keys_to_keep):
     return BibliographyData(entries=filtered_entries)
 
 
-def main():
-    # Root directory containing the .tex files
-    root_directory = "./latex_files"
+def tree_shake(root_directory, input_bib_path, output_bib_path, output_keys_path):
     # List to hold all citation keys
     all_citation_keys = []
 
     # Walk through the directory and its subdirectories
     full_tree = list(os.walk(root_directory))
-    for dirpath, _, filenames in tqdm(full_tree):
+    for dirpath, _, filenames in tqdm(full_tree, desc="Processing LaTeX files"):
         for filename in filenames:
             if filename.endswith(".tex"):
                 # Full path to the file
                 filepath = os.path.join(dirpath, filename)
                 # Read the content of the file
-                with open(filepath, "r") as file:
+                with open(filepath, "r", encoding="utf-8") as file:
                     content = file.read()
                     # Extract citation keys from this file
                     citation_keys = find_citation_keys(content)
@@ -77,18 +76,50 @@ def main():
     all_citation_keys = sorted(set(all_citation_keys))
 
     # Parse the BibTeX file using pybtex
-    bib_database = parse_file("./artifacts/raw.bib")
+    bib_database = parse_file(input_bib_path)
 
     # Filter the BibTeX entries
     filtered_bib_database = filter_bib_entries(bib_database, all_citation_keys)
 
     # Write the filtered entries to a new BibTeX file
-    with open("./artifacts/shaken_raw.bib", "w", encoding="utf-8") as output_file:
+    with open(output_bib_path, "w", encoding="utf-8") as output_file:
         filtered_bib_database.to_file(output_file)
 
-    with open("./artifacts/citation_keys.json", "w", encoding="utf-8") as f:
+    # Write the list of citation keys to a JSON file
+    with open(output_keys_path, "w", encoding="utf-8") as f:
         json.dump(all_citation_keys, f, indent=2)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Process LaTeX files to extract and filter BibTeX entries."
+    )
+    parser.add_argument(
+        "--root_directory",
+        default="./latex_files",
+        help="Root directory containing the .tex files.",
+    )
+    parser.add_argument(
+        "--input_bib_path",
+        default="./artifacts/raw.bib",
+        help="Path to the input BibTeX file.",
+    )
+    parser.add_argument(
+        "--output_bib_path",
+        default="./artifacts/shaken_raw.bib",
+        help="Path to save the filtered BibTeX entries.",
+    )
+    parser.add_argument(
+        "--output_keys_path",
+        default="./artifacts/citation_keys.json",
+        help="Path to save the extracted citation keys in JSON format.",
+    )
+
+    args = parser.parse_args()
+
+    tree_shake(
+        args.root_directory,
+        args.input_bib_path,
+        args.output_bib_path,
+        args.output_keys_path,
+    )
