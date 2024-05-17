@@ -166,3 +166,5 @@ input_anthology.bib
 anthology.bib
 custom.bib
 scratch
+
+latex_files/*.tex
