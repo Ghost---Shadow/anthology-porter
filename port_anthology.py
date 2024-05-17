@@ -3,6 +3,7 @@ import argparse
 from pybtex.database import parse_file
 from pybtex.database import BibliographyData
 from tqdm import tqdm
+from tree_shaker import tree_shake
 
 
 def clean_title(title):
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     # Define optional arguments with default values
     parser.add_argument(
         "--raw_bib_path",
-        default="./artifacts/shaken_raw.bib",
+        default="./artifacts/raw.bib",
         help="Path to the raw BibTeX file.",
     )
     parser.add_argument(
@@ -98,12 +99,53 @@ if __name__ == "__main__":
         default="./artifacts/custom.bib",
         help="Path to save the non-matching BibTeX entries.",
     )
+    parser.add_argument(
+        "--tree_shake_directory",
+        default="./latex_files",
+        help="Root directory containing the .tex files.",
+    )
+    parser.add_argument(
+        "--output_keys_path",
+        default="./artifacts/citation_keys.json",
+        help="Path to save the extracted citation keys in JSON format.",
+    )
+    parser.add_argument(
+        "--shaken_bib_path",
+        default="./artifacts/shaken_raw.bib",
+        help="Path to save the filtered BibTeX entries.",
+    )
+    parser.add_argument(
+        "--tree_shake",
+        action="store_true",
+        help="Should shake tree",
+    )
 
     args = parser.parse_args()
 
+    tree_shake_directory = args.tree_shake_directory
+    raw_bib_path = args.raw_bib_path
+    shaken_bib_path = args.shaken_bib_path
+    input_anthology_path = args.input_anthology_path
+    output_keys_path = args.output_keys_path
+    output_anthology_path = args.output_anthology_path
+    output_custom_path = args.output_custom_path
+
+    input_bib_for_processing = raw_bib_path
+
+    if args.tree_shake:
+        print("Shaking tree")
+        tree_shake(
+            tree_shake_directory,
+            raw_bib_path,
+            shaken_bib_path,
+            output_keys_path,
+        )
+        print("Generated", shaken_bib_path)
+        input_bib_for_processing = shaken_bib_path
+
     main(
-        args.raw_bib_path,
-        args.input_anthology_path,
-        args.output_anthology_path,
-        args.output_custom_path,
+        input_bib_for_processing,
+        input_anthology_path,
+        output_anthology_path,
+        output_custom_path,
     )
